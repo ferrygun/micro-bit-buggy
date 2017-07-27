@@ -1,0 +1,435 @@
+<!doctype html>
+<!--
+Copyright 2016 Google Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<html>
+
+<head>
+    <title>BBC micro:bit Buggy</title>
+    <meta name="description" content="Light up an Buggy with Web Bluetooth.">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+
+
+    <script src="./web/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+
+    <!-- Polymer components -->
+    <link rel="import" href="./web/bower_components/paper-progress/paper-progress.html">
+    <link rel="import" href="./web/bower_components/paper-button/paper-button.html">
+    <link rel="import" href="./web/bower_components/iron-icons/iron-icons.html">
+    <link rel="import" href="./web/bower_components/iron-icons/image-icons.html">
+    <link rel="import" href="./web/bower_components/paper-icon-button/paper-icon-button.html">
+    <link rel="import" href="./web/bower_components/paper-card/paper-card.html">
+    <link rel="import" href="./web/bower_components/paper-dialog/paper-dialog.html">
+    <link rel="import" href="./web/bower_components/paper-toggle-button/paper-toggle-button.html">
+    <link rel="import" href="./web/bower_components/iron-flex-layout/iron-flex-layout.html">
+
+    <link rel="import" href="./web/bower_components/paper-dialog/paper-dialog.html">
+    <link rel="import" href="./web/bower_components/paper-button/paper-button.html">
+    <link rel="import" href="./web/bower_components/paper-input/paper-input.html">
+
+    <link rel="import" href="./web/bower_components/paper-styles/color.html">
+    <link rel="stylesheet" href="./web/bower_components/paper-styles/demo.css">
+
+    <script src="./web/bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="./web/retro-joystick/scripts/retro-joystick.js"></script>
+
+    <link rel="stylesheet" href="./web/retro-joystick/styles/retro-joystick.css" /-->
+
+
+    <style is="custom-style">
+        body {
+            background-color: var(--paper-grey-50);
+        }
+
+        paper-progress {
+            width: 100%;
+        }
+
+        paper-progress.blue {
+            paper-progress-active-color: var(--paper-light-blue-500);
+            paper-progress-secondary-color: var(--paper-light-blue-100);
+        }
+
+        paper-toggle-button.blue {
+            --paper-toggle-button-checked-bar-color: var(--paper-light-blue-500);
+            --paper-toggle-button-checked-button-color: var(--paper-light-blue-500);
+            --paper-toggle-button-checked-ink-color: var(--paper-light-blue-500);
+            --paper-toggle-button-unchecked-bar-color: var(--paper-light-blue-900);
+            --paper-toggle-button-unchecked-button-color: var(--paper-light-blue-900);
+            --paper-toggle-button-unchecked-ink-color: var(--paper-light-blue-900);
+        }
+
+        paper-button {
+            display: block;
+            width: 40px;
+            height: 40px;
+            min-width: 0em;
+            margin: 0.2em 0.2em;
+        }
+
+        paper-button.blue {
+            color: var(--paper-light-blue-500);
+            paper-button-flat-focus-color: var(--paper-light-blue-50);
+        }
+
+        #cards {
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 400px;
+        }
+
+        paper-card {
+            margin-bottom: 5px;
+            margin-top: 5px;
+            width: 100%;
+        }
+
+        .flex {
+            @apply(--layout-horizontal);
+        }
+
+        #retrostick {
+            margin: auto;
+            float: none;
+        }
+    </style>
+</head>
+
+<body unresolved>
+    <template id="template" is="dom-bind">
+      <div id="cards">
+        <paper-card heading="BBC micro:bit Buggy">
+          <div class="card-content">
+            <paper-toggle-button class="blue" id="connect">Connect</paper-toggle-button>
+            <paper-progress id="progress" indeterminate></paper-progress>
+          </div>
+        </paper-card>
+
+        <paper-dialog id="no-bluetooth">
+          <h2>No Web Bluetooth</h2>
+          <p>The Web Bluetooth API is missing. Please enable it at
+          chrome://flags/#enable-web-bluetooth and try again.</p>
+        </paper-dialog>
+
+        <paper-dialog id="errorDialog">
+          <h2>Error</h2>
+          <p>Could not connect to bluetooth device!</p>
+        </paper-dialog>
+      </div>
+    <br/><br/>
+      <div id="retrostick" class="retrostick">
+        <div class="retrostick-base">
+
+          <div class="retrostick-base-joint">
+              <div><div></div></div>
+          </div>
+
+          <span class="retrostick-dir-note retrostick-dir-forward-left">left</span>
+          <span class="retrostick-dir-note retrostick-dir-forward">forward</span>
+          <span class="retrostick-dir-note retrostick-dir-forward-right">right</span>
+
+          <div class="retrostick-stick-wrap">
+            <div class="retrostick-stick"></div>
+          </div>
+
+          <div class="retrostick-ball"></div>
+
+          <span class="retrostick-dir-note retrostick-dir-forward-left">left</span>
+          <span class="retrostick-dir-note retrostick-dir-backward">backward</span>
+          <span class="retrostick-dir-note retrostick-dir-forward-right">right</span>
+
+        </div>
+      </div>
+
+
+    </template>
+
+    <script>
+        'use strict';
+        document.addEventListener('WebComponentsReady', () => {
+            let connectToggle = document.querySelector('#connect');
+            let progress = document.querySelector('#progress');
+            let dialog = document.querySelector('#errorDialog');
+            let gattServer;
+            let commandService;
+            let writeClientReqCharacteristic;
+            let writeClientEvtCharacteristic;
+            let busy = false;
+            let commandQueue = [];
+
+            let drive = 0;
+            let action = 0;
+
+            progress.hidden = true;
+
+            /**
+             * Check if browser supports Web Bluetooth API.
+             */
+            if (navigator.bluetooth == undefined) {
+                document.getElementById("no-bluetooth").style.display = "block";
+                document.getElementById("no-bluetooth").open();
+            }
+
+
+
+            function initEvent() {
+                let cmdPinAd = new Uint16Array([0x22B8, 0x00]);
+                sendEvent(cmdPinAd).then(() => {
+                    console.log('Event set.');
+                }).catch(handleError);
+            }
+
+            function sendEvent(cmd) {
+                if (writeClientReqCharacteristic) {
+                    // Handle one command at a time
+                    if (busy) {
+                        // Queue commands
+                        commandQueueP.push(cmd);
+                        return Promise.resolve();
+                    }
+                    busy = true;
+                    return writeClientReqCharacteristic.writeValue(cmd).then(() => {
+                        busy = false;
+                        // Get next command from queue
+                        let nextCommand = commandQueue.shift();
+                        if (nextCommand) {
+                            sendEvent(nextCommand);
+                        }
+                    });
+                } else {
+                    return Promise.resolve();
+                }
+            }
+
+            function moveBuggy(stick) {
+                let heading = stick.angle;
+                let distance = stick.distance;
+                if (distance < 15) {
+                    buggyStop();
+                    return;
+                } else if ((heading >= 300) || (heading <= 60)) {
+                    buggyForward();
+                } else if (heading <= 120) {
+                    buggyRight();
+                } else if (heading <= 230) {
+                    buggyBackwards();
+                } else {
+                    buggyLeft();
+                }
+            }
+
+            function buggyStop() {
+                if (action == 0) {
+                    return;
+                }
+                drive = 0;
+                action = 0;
+                console.log('buggyStop');
+                sendCommand(new Uint16Array([0x22B8, 1000]));
+            }
+
+            function buggyForward() {
+                if (action == 1) {
+                    return;
+                }
+                action = 1;
+                drive = 1;
+                console.log('buggyForward');
+                sendCommand(new Uint16Array([0x22B8, 1001]));
+            }
+
+            function buggyBackwards() {
+                if (action == 2) {
+                    return;
+                }
+                action = 2;
+                drive = 2;
+                console.log('buggyBackwards');
+                sendCommand(new Uint16Array([0x22B8, 1002]));
+            }
+
+            function buggyLeft() {
+                if (action == 3) {
+                    return;
+                }
+                action = 3;
+                console.log('buggyLeft');
+                sendCommand(new Uint16Array([0x22B8, 1003]));
+            }
+
+            function buggyRight() {
+                if (action == 4) {
+                    return;
+                }
+                action = 4;
+                console.log('buggyRight');
+                sendCommand(new Uint16Array([0x22B8, 1004]));
+            }
+
+            /**
+             * Reset the app variable states.
+             */
+            function resetVariables() {
+                busy = false;
+                progress.hidden = true;
+                gattServer = null;
+                commandService = null;
+                writeClientReqCharacteristic = null;
+                writeClientEvtCharacteristic = null;
+                connectToggle.checked = false;
+
+            }
+
+            /**
+             * API error handler.
+             */
+            function handleError(error) {
+                console.log(error);
+                resetVariables();
+                dialog.open();
+            }
+
+        
+            function sendCommand(cmd) {
+                if (writeClientEvtCharacteristic) {
+                    // Handle one command at a time
+                    if (busy) {
+                        // Queue commands
+                        commandQueue.push(cmd);
+                        return Promise.resolve();
+                    }
+                    busy = true;
+
+
+                    return writeClientEvtCharacteristic.writeValue(cmd).then(() => {
+                        busy = false;
+                        // Get next command from queue
+                        let nextCommand = commandQueue.shift();
+                        if (nextCommand) {
+                            sendCommand(nextCommand);
+                        }
+                    });
+
+
+                } else {
+                    return Promise.resolve();
+                }
+            }
+
+         
+
+            function handleCharacteristicValueChanged(event) {
+                var value = event.target.value;
+
+                let a = [];
+                // Convert raw data bytes to hex values just for the sake of showing something.
+                // In the "real" world, you'd use data.getUint8, data.getUint16 or even
+                // TextDecoder to process raw data bytes.
+                for (let i = 0; i < value.byteLength; i++) {
+                    a.push('0x' + ('00' + value.getUint8(i).toString(16)).slice(-2));
+                }
+                //console.log('> ' + a.join(' '));
+
+            }
+
+
+            /**
+             * Connect to command characteristic.
+             */
+            connectToggle.addEventListener('click', () => {
+                if (gattServer != null && gattServer.connected) {
+                    if (gattServer.disconnect) {
+                        console.log('Disconnecting...');
+                        gattServer.disconnect();
+                    }
+                    resetVariables();
+                } else {
+                    console.log('Connecting...');
+                    connectToggle.checked = true;
+                    progress.hidden = false;
+                    if (writeClientReqCharacteristic == null) {
+                        navigator.bluetooth.requestDevice({
+                                filters: [{
+                                    namePrefix: 'BBC micro:bit',
+                                }],
+                                optionalServices: ['e95d93af-251d-470a-a062-fa1922dfa9a8'] //EVENTSERVICE_SERVICE_UUID
+                            })
+                            .then(device => {
+                                console.log('Connecting to GATT Server...');
+                                return device.gatt.connect();
+                            })
+                            .then(server => {
+                                console.log('> Found GATT server');
+                                gattServer = server;
+                                //console.log(gattServer);
+                                // Get command service
+                                return gattServer.getPrimaryService('e95d93af-251d-470a-a062-fa1922dfa9a8'); //EVENTSERVICE_SERVICE_UUID
+                            })
+                            .then(service => {
+                                console.log('> Found command service');
+                                commandService = service;
+                                return commandService.getCharacteristic('e95d9775-251d-470a-a062-fa1922dfa9a8'); //MICROBITEVENT_CHARACTERISTIC_UUID
+                            })
+                            .then(characteristic => {
+                                console.log('> Found write characteristic');
+                                                                
+                                return characteristic.startNotifications().then(_ => {
+                                  console.log('> Notifications started');
+                                  characteristic.addEventListener('characteristicvaluechanged',
+                                      handleCharacteristicValueChanged);
+                                });
+                            })
+                            .then(service => {
+                                return commandService.getCharacteristic('e95d5404-251d-470a-a062-fa1922dfa9a8'); //CLIENTEVENT_CHARACTERISTIC_UUID
+
+                            })  
+                            .then(ClientEvtCharacteristic => {
+                                console.log('> Found Client Event ClientEvtCharacteristic');
+                                writeClientEvtCharacteristic = ClientEvtCharacteristic;
+                                return commandService.getCharacteristic('e95d23c4-251d-470a-a062-fa1922dfa9a8'); //CLIENTREQUIREMENTS_CHARACTERISTIC_UUID
+                            })
+                            .then(ClientReqCharacteristic => {
+                                console.log('> Found Client Requirement characteristic');
+                                writeClientReqCharacteristic = ClientReqCharacteristic;
+                                initEvent();
+                                progress.hidden = true;
+                            })
+
+                            .catch(handleError);
+                    } else {
+                        progress.hidden = true;
+                    }
+                }
+            });
+
+            let joystick = new RetroJoyStick({
+                retroStickElement: document.querySelector('#retrostick')
+            });
+            joystick.subscribe('change', stick => {
+                moveBuggy(stick);
+            });
+
+
+        });
+    </script>
+</body>
+
+</html>
