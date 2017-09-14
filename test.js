@@ -1,2 +1,1 @@
-navigator.bluetooth.requestDevice({
-});
+console.log("A");
